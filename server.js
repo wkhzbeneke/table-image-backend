@@ -1,33 +1,62 @@
+
 const express = require('express');
-const { OpenAI } = require('openai');
+const bodyParser = require('body-parser');
 const cors = require('cors');
-require('dotenv').config();
+const { Configuration, OpenAIApi } = require('openai');
 
 const app = express();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const port = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
-app.use(express.json());
+app.use(bodyParser.json());
 
+// OpenAI configuration
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY, // Make sure this key is set in your Render environment variables
+});
+const openai = new OpenAIApi(configuration);
+
+// Route
 app.post('/generate-image', async (req, res) => {
-  const { shape, size, resin1, resin2, finish } = req.body;
-
-  const prompt = `Top-down view of a ${shape.toLowerCase()} live edge wood table, about ${size} inches across, with a resin river in ${resin1} and ${resin2}. ${finish} finish. Studio lighting. Detailed wood texture.`;
+  const {
+    shape,
+    wood,
+    riverStyle,
+    size,
+    resin1,
+    resin2,
+    resin3,
+    finish
+  } = req.body;
 
   try {
-    const response = await openai.images.generate({
-      model: 'dall-e-3',
+    // Safely handle undefined values
+    const safeShape = shape || 'rectangle';
+    const safeWood = wood || 'walnut';
+    const safeRiverStyle = riverStyle || 'inside';
+    const safeSize = size || '48x24';
+    const safeResin1 = resin1 || 'blue';
+    const safeResin2 = resin2 || 'none';
+    const safeResin3 = resin3 || 'none';
+    const safeFinish = finish || 'matte';
+
+    const prompt = \`Top-down view of a \${safeShape.toLowerCase()} live edge \${safeWood} table, about \${safeSize} inches, with a \${safeRiverStyle} resin river in \${safeResin1}, \${safeResin2}, and \${safeResin3}. \${safeFinish} finish. Studio lighting. Detailed wood texture.\`;
+
+    const aiResponse = await openai.createImage({
       prompt,
       n: 1,
-      size: '1024x1024',
+      size: "1024x1024",
     });
 
-    const imageUrl = response.data[0].url;
-    res.json({ imageUrl });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Image generation failed.' });
+    res.json({ imageUrl: aiResponse.data.data[0].url });
+  } catch (error) {
+    console.error('Error generating image:', error.message);
+    res.status(500).json({ error: 'Image generation failed. Please try again later.' });
   }
 });
 
-app.listen(3000, () => console.log('🟢 Server running on http://localhost:3000'));
+// Start server
+app.listen(port, () => {
+  console.log(\`Server running on http://localhost:\${port}\`);
+});
