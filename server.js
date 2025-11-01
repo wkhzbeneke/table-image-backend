@@ -105,7 +105,7 @@ app.post('/generate-image', async (req, res) => {
     const color2 = getColorName(resin2);
     const color3 = getColorName(resin3);
 
-    const prompt = `Top-down view of a ${shape} ${wood} table with ${river} resin river design, size ${size}, featuring resin colors: ${color1}, ${color2}, ${color3}. Finished in ${finish}. Studio lighting. Professional woodcraft photography style.`;
+    const prompt = `Adopt the role of an expert AI prompt engineer specializing in product photography and image generation. You have deep knowledge of professional photography techniques,   including composition, lighting, camera settings, material rendering, and visual styling for e-commerce and portfolio-quality product images. Create a Top-down view photo  of a ${shape} ${wood} table with ${river} classic resin river design, size ${size}, featuring natually flowing resin colors: ${color1}, ${color2}, ${color3}. Finished in ${finish}. Studio lighting. Professional woodcraft photography style.`;
 
     const response = await openai.images.generate({
       model: 'dall-e-3',
