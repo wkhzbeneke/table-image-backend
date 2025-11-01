@@ -7,56 +7,49 @@ const { Configuration, OpenAIApi } = require('openai');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Middleware
+require('dotenv').config();
+
 app.use(cors());
 app.use(bodyParser.json());
 
-// OpenAI configuration
 const configuration = new Configuration({
-  apiKey: process.env.OPENAI_API_KEY, // Make sure this key is set in your Render environment variables
+  apiKey: process.env.OPENAI_API_KEY,
 });
 const openai = new OpenAIApi(configuration);
 
-// Route
 app.post('/generate-image', async (req, res) => {
-  const {
-    shape,
-    wood,
-    riverStyle,
-    size,
-    resin1,
-    resin2,
-    resin3,
-    finish
-  } = req.body;
+  const { shape, wood, riverStyle, size, resin1, resin2, resin3, finish } = req.body;
+
+  if (!shape || !wood || !size || !resin1 || !finish || !riverStyle) {
+    return res.status(400).json({ error: 'Missing required parameters' });
+  }
+
+  const safeShape = String(shape);
+  const safeWood = String(wood);
+  const safeRiverStyle = String(riverStyle);
+  const safeSize = String(size);
+  const safeResin1 = String(resin1);
+  const safeResin2 = resin2 ? String(resin2) : '';
+  const safeResin3 = resin3 ? String(resin3) : '';
+  const safeFinish = String(finish);
+
+  const prompt = `Top-down view of a ${safeShape.toLowerCase()} live edge ${safeWood} table, about ${safeSize} inches, with a ${safeRiverStyle} resin river in ${safeResin1}, ${safeResin2}, ${safeResin3}. ${safeFinish} finish. Studio lighting. Detailed wood texture.`;
 
   try {
-    // Safely handle undefined values
-    const safeShape = shape || 'rectangle';
-    const safeWood = wood || 'walnut';
-    const safeRiverStyle = riverStyle || 'inside';
-    const safeSize = size || '48x24';
-    const safeResin1 = resin1 || 'blue';
-    const safeResin2 = resin2 || 'none';
-    const safeResin3 = resin3 || 'none';
-    const safeFinish = finish || 'matte';
-
-    const prompt = \`Top-down view of a \${safeShape.toLowerCase()} live edge \${safeWood} table, about \${safeSize} inches, with a \${safeRiverStyle} resin river in \${safeResin1}, \${safeResin2}, and \${safeResin3}. \${safeFinish} finish. Studio lighting. Detailed wood texture.\`;
-
-    const aiResponse = await openai.createImage({
-      prompt,
+    const response = await openai.createImage({
+      prompt: prompt,
       n: 1,
-      size: "1024x1024",
+      size: '1024x1024',
     });
 
-    res.json({ imageUrl: aiResponse.data.data[0].url });
+    const imageUrl = response.data.data[0].url;
+    res.json({ imageUrl });
   } catch (error) {
-    console.error('Error generating image:', error.message);
-    res.status(500).json({ error: 'Image generation failed. Please try again later.' });
+    console.error('OpenAI API error:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Failed to generate image' });
   }
 });
 
-// Start server
 app.listen(port, () => {
-  console.log(\`Server running on http://localhost:\${port}\`);
+  console.log(`Server running on http://localhost:${port}`);
 });
