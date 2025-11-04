@@ -1,49 +1,23 @@
-document.getElementById('tableForm').addEventListener('submit', async function (e) {
-  e.preventDefault();
+// server.js (Backend)
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const { generateImagePrompt } = require('./builder');
 
-  const shape = document.getElementById('shape').value;
-  const wood = document.getElementById('wood').value;
-  const river = document.getElementById('river').value;
-  const length = document.getElementById('length').value;
-  const width = document.getElementById('width').value;
-  const diameter = document.getElementById('diameter').value;
-  const resin1 = document.getElementById('resin1').value;
-  const resin2 = document.getElementById('resin2').value;
-  const resin3 = document.getElementById('resin3').value;
-  const base = document.getElementById('base').value;
-  const finish = document.getElementById('finish').value;
+const app = express();
+app.use(cors());
+app.use(bodyParser.json());
 
-  const requestData = {
-    shape,
-    wood,
-    river,
-    length,
-    width,
-    diameter,
-    resin1,
-    resin2,
-    resin3,
-    base,
-    finish
-  };
-
+app.post('/generate', async (req, res) => {
   try {
-    const response = await fetch('https://table-image-backend-v2.onrender.com/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestData)
-    });
-
-    if (!response.ok) {
-      throw new Error('Image generation failed');
-    }
-
-    const data = await response.json();
-    document.getElementById('tableImage').src = data.imageUrl;
-  } catch (err) {
-    alert(err.message);
-    console.error('Error:', err);
+    const prompt = generateImagePrompt(req.body);
+    res.json({ imageUrl: `https://dummyimage.com/600x400/000/fff&text=${encodeURIComponent(prompt)}` });
+  } catch (error) {
+    res.status(500).json({ error: 'Image generation failed.' });
   }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
