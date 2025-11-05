@@ -1,4 +1,10 @@
-// builder.js (Backend file for generating image prompts)
+function formatResinColor(resin) {
+  if (!resin || !resin.name) return null;
+  const cleanName = resin.name.replace(/[0-9]/g, '').trim();
+  return resin.hex
+    ? `${cleanName} (${resin.hex})`
+    : cleanName;
+}
 
 function generateImagePrompt(data) {
   const {
@@ -6,14 +12,15 @@ function generateImagePrompt(data) {
     resin1, resin2, resin3, base, finish
   } = data;
 
-  let sizeDescription = '';
-  if (shape === 'Circle') {
-    sizeDescription = `${diameter}-inch diameter`;
-  } else {
-    sizeDescription = `${length}x${width} inches`;
-  }
+  const sizeDescription = shape === 'Circle'
+    ? `${diameter}-inch diameter`
+    : `${length}x${width} inches`;
 
-  return `A custom ${shape} river table made of ${wood} with a ${river} river, size ${sizeDescription}, resin colors ${resin1}, ${resin2}, ${resin3}, ${base} base, and ${finish} finish.`;
+  const resinColors = [formatResinColor(resin1), formatResinColor(resin2), formatResinColor(resin3)]
+    .filter(Boolean)
+    .join(', ');
+
+  return `A modern ${shape.toLowerCase()} river table made from live edge ${wood} wood with a ${river.toLowerCase()} channel filled with epoxy resin in ${resinColors}. The table has a ${base.toLowerCase()} base and a ${finish.toLowerCase()} finish. Size: ${sizeDescription}. Smooth, clean epoxy — no water texture or landscape features. Centered product photography on a solid black background with soft, even lighting. The table should look handcrafted, premium, and realistic.`;
 }
 
 module.exports = { generateImagePrompt };
