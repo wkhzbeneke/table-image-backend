@@ -1,54 +1,59 @@
-// server.js
+// server.js — BACKEND
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const fetch = require('node-fetch'); // Used to send the image request
-const FormData = require('form-data'); // Used to format request as multipart/form-data
-const { generateImagePrompt } = require('./builder'); // Your prompt builder
+const { OpenAI } = require('openai');
+
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const STABILITY_API_KEY = process.env.STABILITY_API_KEY;
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+const PORT = process.env.PORT || 3000;
+
+// Simple image prompt generator — customize if needed
+function generateImagePrompt(data) {
+  const {
+    shape,
+    woodType,
+    riverStyle,
+    length,
+    width,
+    diameter,
+    resinColor1,
+    resinColor2,
+    resinColor3,
+    base,
+    finish,
+  } = data;
+
+  return `A custom epoxy resin river table. Shape: ${shape}. Wood type: ${woodType}. River style: ${riverStyle}. Dimensions: ${length || ''}L x ${width || ''}W x ${diameter || ''}D inches. Resin colors: ${resinColor1}, ${resinColor2}, ${resinColor3}. Base: ${base}. Finish: ${finish}.`;
+}
 
 app.post('/generate', async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
 
-    const form = new FormData();
-    form.append('prompt', prompt);
-    form.append('output_format', 'png');
-    form.append('aspect_ratio', '1:1');
-
-    const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${STABILITY_API_KEY}`,
-        Accept: 'application/json',
-        ...form.getHeaders(),
-      },
-      body: form,
+    const response = await openai.images.generate({
+      model: 'dall-e-3',
+      prompt,
+      n: 1,
+      size: '1024x1024',
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Stability API Error:', errorText);
-      return res.status(500).json({ error: 'Stability API request failed.' });
-    }
-
-    const buffer = await response.arrayBuffer();
-    const base64Image = Buffer.from(buffer).toString('base64');
-    const imageUrl = `data:image/png;base64,${base64Image}`;
-
+    const imageUrl = response.data[0].url;
     res.json({ imageUrl });
   } catch (error) {
-    console.error('Image generation failed:', error.message);
+    console.error('Error generating image:', error);
     res.status(500).json({ error: 'Image generation failed.' });
   }
 });
 
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
 });
