@@ -3,7 +3,6 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const fetch = require('node-fetch');
-const FormData = require('form-data');
 const { generateImagePrompt } = require('./builder');
 
 const app = express();
@@ -16,34 +15,36 @@ app.post('/generate', async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
 
-    const form = new FormData();
-    form.append('prompt', prompt);
-    form.append('output_format', 'png');
-    form.append('aspect_ratio', '1:1');
-    form.append('mode', 'text-to-image');
-
-    const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
+    const response = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-v1-5/text-to-image', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${STABILITY_API_KEY}`,
-        Accept: 'application/json',
-        ...form.getHeaders(),
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
       },
-      body: form,
+      body: JSON.stringify({
+        text_prompts: [{ text: prompt }],
+        cfg_scale: 7,
+        height: 512,
+        width: 512,
+        samples: 1,
+        steps: 30
+      })
     });
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('❌ Stability API error:', error);
+      console.error('Stability API error:', error);
       return res.status(500).json({ error: 'Stability API request failed.' });
     }
 
-    const buffer = await response.arrayBuffer();
-    const base64Image = Buffer.from(buffer).toString('base64');
+    const result = await response.json();
+    const base64Image = result.artifacts[0].base64;
     const imageUrl = `data:image/png;base64,${base64Image}`;
     res.json({ imageUrl });
+
   } catch (err) {
-    console.error('❌ Server error:', err.message);
+    console.error('Server error:', err.message);
     res.status(500).json({ error: 'Image generation failed.' });
   }
 });
