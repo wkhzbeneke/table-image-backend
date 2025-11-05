@@ -1,8 +1,8 @@
-// server.js
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const fetch = require('node-fetch');
+const FormData = require('form-data');
 const { generateImagePrompt } = require('./builder');
 
 const app = express();
@@ -15,38 +15,35 @@ app.post('/generate', async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
 
-    const response = await fetch('https://api.stability.ai/v1/generation/stable-diffusion-v1-5/text-to-image', {
+    const form = new FormData();
+    form.append('prompt', prompt);
+    form.append('model', 'sd3'); // ✅ Correct model ID
+    form.append('output_format', 'png');
+    form.append('aspect_ratio', '1:1');
+
+    const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${STABILITY_API_KEY}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
+        Accept: 'application/json',
+        ...form.getHeaders(),
       },
-      body: JSON.stringify({
-        text_prompts: [
-          { text: prompt }
-        ],
-        cfg_scale: 7,
-        height: 512,
-        width: 512,
-        samples: 1,
-        steps: 30
-      })
+      body: form,
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error('Stability API error:', error);
+      const errorText = await response.text();
+      console.error('Stability API error:', errorText);
       return res.status(500).json({ error: 'Stability API request failed.' });
     }
 
-    const result = await response.json();
-    const base64Image = result.artifacts[0].base64;
+    const buffer = await response.arrayBuffer();
+    const base64Image = Buffer.from(buffer).toString('base64');
     const imageUrl = `data:image/png;base64,${base64Image}`;
-    res.json({ imageUrl });
 
-  } catch (err) {
-    console.error('Server error:', err.message);
+    res.json({ imageUrl });
+  } catch (error) {
+    console.error('Image generation failed:', error.message);
     res.status(500).json({ error: 'Image generation failed.' });
   }
 });
