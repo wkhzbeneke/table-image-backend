@@ -1,9 +1,11 @@
 // server.js
+// server.js
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const fetch = require('node-fetch');
-const { generateImagePrompt } = require('./builder');
+const fetch = require('node-fetch'); // Used to send the image request
+const FormData = require('form-data'); // Used to format request as multipart/form-data
+const { generateImagePrompt } = require('./builder'); // Your prompt builder
 
 const app = express();
 app.use(cors());
@@ -15,25 +17,27 @@ app.post('/generate', async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
 
+    // Create the multipart form data body
+    const form = new FormData();
+    form.append('prompt', prompt);
+    form.append('model', 'sd3'); // Optional: you can try 'stable-diffusion-xl-beta'
+    form.append('output_format', 'png');
+    form.append('aspect_ratio', '1:1');
+
     const response = await fetch('https://api.stability.ai/v2beta/stable-image/generate/core', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${STABILITY_API_KEY}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
+        Accept: 'application/json',
+        ...form.getHeaders(), // Very important: sets correct Content-Type
       },
-      body: JSON.stringify({
-        prompt,
-        output_format: 'png',
-        model: 'sd3', // or "stable-diffusion-xl-beta"
-        aspect_ratio: '1:1'
-      })
+      body: form,
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      console.error('Stability API Error:', errText);
-      return res.status(500).json({ error: 'Stability API failed' });
+      const errorText = await response.text();
+      console.error('Stability API Error:', errorText);
+      return res.status(500).json({ error: 'Stability API request failed.' });
     }
 
     const buffer = await response.arrayBuffer();
@@ -41,13 +45,13 @@ app.post('/generate', async (req, res) => {
     const imageUrl = `data:image/png;base64,${base64Image}`;
 
     res.json({ imageUrl });
-  } catch (err) {
-    console.error('Image generation failed:', err.message);
-    res.status(500).json({ error: 'Image generation failed' });
+  } catch (error) {
+    console.error('Image generation failed:', error.message);
+    res.status(500).json({ error: 'Image generation failed.' });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
