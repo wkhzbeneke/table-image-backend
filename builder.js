@@ -58,13 +58,13 @@ function generateImagePrompt(data) {
     .join(', ');
 
   return `
-    A high-resolution product photograph of a handmade ${shape.toLowerCase()} river table, 
-    crafted from polished ${wood} wood with a ${river.toLowerCase()} style river. 
-    The river is filled with ${resinDescriptions}. 
-    The table features a ${base.toLowerCase()} base and a ${finish.toLowerCase()} finish. 
-    Dimensions: ${sizeDescription}. 
-    The scene is set on a solid black background with soft studio lighting. 
-    Realistic wood grain, transparent and glossy resin, detailed texture, centered composition.
+    A professional product photo of a custom handmade ${shape.toLowerCase()} river table made from polished ${wood} wood. 
+    The design features a ${river.toLowerCase()} style river filled with ${resinDescriptions}. 
+    The base is a modern ${base.toLowerCase()} frame (not pedestal style). 
+    Finished with a ${finish.toLowerCase()} coat. 
+    Size: ${sizeDescription}. 
+    Displayed on a seamless black background with soft studio lighting. 
+    Emphasize wood grain texture, realistic glossy transparent resin, and clean modern craftsmanship. No props or background clutter.
   `.trim();
 }
 
