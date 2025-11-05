@@ -1,4 +1,4 @@
-// builder.js (Backend file for generating image prompts)
+// builder.js
 
 function generateImagePrompt(data) {
   const {
@@ -13,7 +13,17 @@ function generateImagePrompt(data) {
     sizeDescription = `${length}x${width} inches`;
   }
 
-  return `A custom ${shape} river table made of ${wood} with a ${river} river, size ${sizeDescription}, resin colors ${resin1}, ${resin2}, ${resin3}, ${base} base, and ${finish} finish.`;
+  const resinColors = [resin1, resin2, resin3].filter(Boolean).join(', ');
+
+  return `
+    A high-resolution studio photograph of a handmade ${shape.toLowerCase()} river table, 
+    crafted from polished ${wood} wood with a ${river.toLowerCase()} shaped river filled with ${resinColors} resin. 
+    The table has a ${base.toLowerCase()} base and a ${finish.toLowerCase()} finish. 
+    Dimensions: ${sizeDescription}. 
+    Displayed on a solid black background with soft studio lighting. 
+    The image should be photorealistic, with accurate wood grain texture, realistic resin transparency and shine, 
+    and clear focus. Product photography style, centered composition, no props or background distractions.
+  `.trim();
 }
 
 module.exports = { generateImagePrompt };
