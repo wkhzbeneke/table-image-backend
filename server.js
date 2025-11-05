@@ -23,7 +23,9 @@ app.post('/generate', async (req, res) => {
         Accept: 'application/json'
       },
       body: JSON.stringify({
-        text_prompts: [{ text: prompt }],
+        text_prompts: [
+          { text: prompt }
+        ],
         cfg_scale: 7,
         height: 512,
         width: 512,
