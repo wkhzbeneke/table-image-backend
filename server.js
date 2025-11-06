@@ -14,6 +14,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 app.post('/generate', async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
+    console.log('🧠 Prompt being sent to DALL·E:', prompt); // logs the full prompt
 
     const dalleResponse = await openai.images.generate({
       prompt,
@@ -23,10 +24,9 @@ app.post('/generate', async (req, res) => {
     });
 
     const imageUrl = dalleResponse.data[0]?.url;
-    if (!imageUrl) throw new Error('No image returned.');
+    if (!imageUrl) throw new Error('No image returned by OpenAI');
 
-    // ✅ FIXED: use image_url to match frontend
-    res.json({ image_url: imageUrl });
+    res.json({ image_url: imageUrl }); // ✅ MATCHES what frontend expects
   } catch (err) {
     console.error('Image generation error:', err.message);
     res.status(500).json({ error: 'Image generation failed.' });
