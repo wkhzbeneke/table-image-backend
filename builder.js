@@ -1,6 +1,6 @@
 // builder.js — Builds descriptive prompts for image generation
 
-function generateImagePrompt(data) {
+export function generateImagePrompt(data) {
   const {
     shape, wood, river, length, width, diameter,
     resin1, resin2, resin3, base, finish
@@ -40,8 +40,11 @@ function generateImagePrompt(data) {
     : `${length}×${width} inch rectangular table`;
 
   return `
-A photorealistic image of a handcrafted ${sizeText} river table made from two live‑edge ${wood} wood slabs with visible knots, swirling grain patterns, and natural edge imperfections. Between the slabs flows a central resin river in an organic, fluid shape with ${resinColors}, blending together naturally to mimic hand‑poured epoxy work. The resin appears rich and semi‑translucent, catching light with subtle depth. The table rests on a modern flat ${base.toLowerCase()} base — not a pedestal — and features a smooth, ${finish.toLowerCase()} finish. The scene is lit with soft, diffused natural light in a clean, neutral setting, and viewed from a slightly elevated front angle to showcase the wood texture and resin flow. No text or logos — just the table, centered in frame with realistic material details.
+A photorealistic image of a handcrafted ${sizeText} river table made from two live‑edge ${wood} wood slabs with visible knots, swirling grain patterns, and natural edge imperfections. 
+Between the slabs flows a central resin river in an organic, fluid shape with ${resinColors}, blending together naturally to mimic hand‑poured epoxy work. 
+The resin appears rich and semi‑translucent, catching light with subtle depth. 
+The table rests on a modern flat ${base.toLowerCase()} base — not a pedestal — and features a smooth, ${finish.toLowerCase()} finish. 
+The scene is lit with soft, diffused natural light in a clean, neutral setting, and viewed from a slightly elevated front angle to showcase the wood texture and resin flow. 
+No text or logos — just the table, centered in frame with realistic material details.
 `.trim();
 }
-
-export { generateImagePrompt };
