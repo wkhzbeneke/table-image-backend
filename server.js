@@ -25,7 +25,8 @@ app.post('/generate', async (req, res) => {
     const imageUrl = dalleResponse.data[0]?.url;
     if (!imageUrl) throw new Error('No image returned.');
 
-    res.json({ imageUrl });
+    // ✅ FIXED: use image_url to match frontend
+    res.json({ image_url: imageUrl });
   } catch (err) {
     console.error('Image generation error:', err.message);
     res.status(500).json({ error: 'Image generation failed.' });
