@@ -1,48 +1,46 @@
-// server.js — Express backend to handle image generation via DALL·E API
+// server.js — Express backend to handle image generation via OpenAI
 
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { generateImagePrompt } = require('./builder');
+const { OpenAI } = require('openai');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Import OpenAI SDK
-const { OpenAI } = require('openai');
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
-// Image generation endpoint
 app.post('/generate', async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
-    console.log('✅ Generated Prompt:', prompt);
+    console.log('Generated Prompt:\n', prompt);
 
-    // Call DALL·E 3 image generation endpoint
+    // Use DALL·E image generation endpoint
     const response = await openai.images.generate({
-      model: 'dall-e-3',
-      prompt: prompt,
+      prompt,
+      model: 'dall-e-3', // or dall-e-2 if using that version
       n: 1,
-      size: '1024x1024',
-      quality: 'standard',
-      response_format: 'url'
+      size: '1024x1024'
     });
 
-    const imageUrl = response.data?.[0]?.url;
+    const imageUrl = response.data[0]?.url;
+
     if (!imageUrl) {
-      throw new Error('No image URL returned from DALL·E');
+      throw new Error('No image URL returned by OpenAI.');
     }
 
-    res.json({ imageUrl, prompt }); // Send back image and prompt (for debugging/display)
+    res.json({ imageUrl, prompt });
   } catch (err) {
-    console.error('❌ Image generation error:', err.message);
-    res.status(500).json({ error: 'Image generation failed.' });
+    console.error('Image generation error:', err);
+    res.status(500).json({ error: 'Image generation failed.', details: err.message });
   }
 });
 
-// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
