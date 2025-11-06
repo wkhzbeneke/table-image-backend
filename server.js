@@ -1,4 +1,4 @@
-// server.js — Express backend to handle image generation via GPT‑4o image model
+// server.js — Express backend to handle image generation via DALL·E API
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -13,34 +13,36 @@ app.use(bodyParser.json());
 const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// Image generation endpoint
 app.post('/generate', async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
-    console.log('Generated Prompt:', prompt);
+    console.log('✅ Generated Prompt:', prompt);
 
-    // Call GPT‑4o image generation model ("gpt-image-1" or whichever your account has)
-    const response = await openai.chat.completions.create({
-      model: 'gpt-image-1',
-      messages: [
-        { role: 'system', content: 'You are a highly skilled image generation assistant.' },
-        { role: 'user', content: prompt }
-      ]
+    // Call DALL·E 3 image generation endpoint
+    const response = await openai.images.generate({
+      model: 'dall-e-3',
+      prompt: prompt,
+      n: 1,
+      size: '1024x1024',
+      quality: 'standard',
+      response_format: 'url'
     });
 
-    // Extract image URL from response
-    const imageUrl = response.choices?.[0]?.message?.content;
+    const imageUrl = response.data?.[0]?.url;
     if (!imageUrl) {
-      throw new Error('No image URL returned');
+      throw new Error('No image URL returned from DALL·E');
     }
 
-    res.json({ imageUrl });
+    res.json({ imageUrl, prompt }); // Send back image and prompt (for debugging/display)
   } catch (err) {
-    console.error('Image generation error:', err);
+    console.error('❌ Image generation error:', err.message);
     res.status(500).json({ error: 'Image generation failed.' });
   }
 });
 
+// Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
