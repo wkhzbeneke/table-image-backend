@@ -1,5 +1,4 @@
 {
-{
   "name": "table-image-backend",
   "version": "1.0.0",
   "description": "Backend service for generating river table images via OpenAI",
