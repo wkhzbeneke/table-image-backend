@@ -1,8 +1,6 @@
 {
-{
   "name": "table-image-backend",
   "version": "1.0.0",
-  "description": "Backend to generate DALL·E river table images",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -11,6 +9,7 @@
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "express": "^4.18.2",
-    "node-fetch": "^2.6.12"
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.6.7"
   }
 }
