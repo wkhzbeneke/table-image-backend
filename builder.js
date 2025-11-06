@@ -1,4 +1,4 @@
-// builder.js (Backend: generates descriptive prompts for DALL·E)
+// builder.js (Backend: builds descriptive DALL·E prompt for river table)
 
 const colorMap = {
   BYU1: '#002E5D',
@@ -36,7 +36,7 @@ const colorMap = {
 function getColorDescription(code) {
   if (!code) return '';
   const hex = colorMap[code];
-  return hex ? `${code} resin (color: ${hex})` : code;
+  return hex ? `${code} (color: ${hex})` : code;
 }
 
 function generateImagePrompt(data) {
@@ -45,27 +45,21 @@ function generateImagePrompt(data) {
     resin1, resin2, resin3, base, finish
   } = data;
 
-  let sizeDescription = '';
-  if (shape === 'Circle') {
-    sizeDescription = `${diameter}-inch diameter`;
-  } else {
-    sizeDescription = `${length}x${width} inches`;
-  }
+  const sizeDescription =
+    shape === 'Circle'
+      ? `${diameter}-inch diameter`
+      : `${length}x${width} inches`;
 
-  const resinDescriptions = [resin1, resin2, resin3]
+  const resinColors = [resin1, resin2, resin3]
     .filter(Boolean)
     .map(getColorDescription)
     .join(', ');
 
-  return `
-    A professional product photo of a custom handmade ${shape.toLowerCase()} river table made from polished ${wood} wood. 
-    The design features a ${river.toLowerCase()} style river filled with ${resinDescriptions}. 
-    The base is a modern ${base.toLowerCase()} frame (not pedestal style). 
-    Finished with a ${finish.toLowerCase()} coat. 
-    Size: ${sizeDescription}. 
-    Displayed on a seamless black background with soft studio lighting. 
-    Emphasize wood grain texture, realistic glossy transparent resin, and clean modern craftsmanship. No props or background clutter.
+  const prompt = `
+    A photorealistic image of a handcrafted ${shape.toLowerCase()} river table featuring a classic three-part composition: two outer planks of ${wood.toLowerCase()} wood flanking a central epoxy resin river. The ${wood.toLowerCase()} shows rich, natural grain with visible knots and polished texture. The resin river blends ${resinColors} in flowing, organic motion, with natural transitions and marbling patterns. The resin appears translucent and glossy with depth and movement. The base of the table is made of ${base.toLowerCase()} and the surface has a ${finish.toLowerCase()} finish. Dimensions: ${sizeDescription}. Captured from a slight angle view with soft studio lighting on a clean black background, showing detailed texture, realistic materials, and high-end craftsmanship.
   `.trim();
+
+  return prompt;
 }
 
 module.exports = { generateImagePrompt };
