@@ -1,4 +1,4 @@
-// server.js — Express backend to generate image and return prompt using GPT-4o
+// server.js — Express backend to generate image and return prompt using GPT-Image-1
 
 import express from "express";
 import bodyParser from "body-parser";
@@ -17,9 +17,9 @@ app.post("/generate", async (req, res) => {
     const prompt = generateImagePrompt(req.body);
     console.log("Prompt for image generation:\n", prompt);
 
-    // ✅ GPT-4o image generation
+    // ✅ GPT-Image-1 (current model for high-fidelity rendering)
     const imageResponse = await openai.images.generate({
-      model: "gpt-4o-mini", // or "gpt-4o" for higher quality
+      model: "gpt-image-1", // or "gpt-image-1-mini" for faster, cheaper results
       prompt: prompt,
       n: 1,
       size: "1024x1024",
@@ -27,9 +27,8 @@ app.post("/generate", async (req, res) => {
     });
 
     const base64Image = imageResponse.data?.[0]?.b64_json;
-    if (!base64Image) throw new Error("No image returned from GPT-4o");
+    if (!base64Image) throw new Error("No image returned from GPT-Image-1");
 
-    // ✅ Correct template literal — previously missing closing characters
     const imageUrl = `data:image/png;base64,${base64Image}`;
 
     res.json({ prompt, imageUrl });
