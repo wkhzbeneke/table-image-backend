@@ -17,19 +17,17 @@ app.post("/generate", async (req, res) => {
     const prompt = generateImagePrompt(req.body);
     console.log("Prompt for image generation:\n", prompt);
 
-    // ✅ GPT-Image-1 (current model for high-fidelity rendering)
+    // ✅ GPT-Image-1 (compatible with current SDK)
     const imageResponse = await openai.images.generate({
-      model: "gpt-image-1", // or "gpt-image-1-mini" for faster, cheaper results
+      model: "gpt-image-1", // or "gpt-image-1-mini"
       prompt: prompt,
-      n: 1,
       size: "1024x1024",
-      response_format: "b64_json"
+      n: 1
     });
 
-    const base64Image = imageResponse.data?.[0]?.b64_json;
-    if (!base64Image) throw new Error("No image returned from GPT-Image-1");
-
-    const imageUrl = `data:image/png;base64,${base64Image}`;
+    // The SDK returns a direct URL for the image
+    const imageUrl = imageResponse.data?.[0]?.url;
+    if (!imageUrl) throw new Error("No image URL returned from GPT-Image-1");
 
     res.json({ prompt, imageUrl });
   } catch (err) {
