@@ -1,7 +1,7 @@
 {
   "name": "table-image-backend",
   "version": "1.0.0",
-  "description": "Backend service for generating river table images",
+  "description": "Backend service for generating river table images with GPT‑Image‑1",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
