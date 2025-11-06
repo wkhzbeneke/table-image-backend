@@ -1,4 +1,4 @@
-// builder.js — Builds descriptive prompts for DALL·E image generation
+// builder.js — Builds descriptive prompts for image generation
 
 function generateImagePrompt(data) {
   const {
@@ -6,7 +6,6 @@ function generateImagePrompt(data) {
     resin1, resin2, resin3, base, finish
   } = data;
 
-  // Resin color hex codes (Big 12 + others)
   const colorMap = {
     BYU1: '#002E5D', BYU2: '#0062B8',
     Kansas1: '#0051BA', Kansas2: '#E8000D',
@@ -25,27 +24,23 @@ function generateImagePrompt(data) {
     'Central Florida1': '#FFC904', 'Central Florida2': '#BA9B37'
   };
 
-  // Translate color dropdown code to readable string with hex
   const getColorDescription = (code) => {
     if (!code || code === 'None') return '';
     const hex = colorMap[code];
     return hex ? `${code} (resin color ${hex})` : code;
   };
 
-  // Combine selected resin colors into a readable phrase
   const resinColors = [resin1, resin2, resin3]
     .filter(color => color && color !== 'None')
     .map(getColorDescription)
     .join(' and ');
 
-  // Format size based on shape
   const sizeText = shape === 'Circle'
     ? `${diameter}-inch round table`
-    : `${length}x${width} inch rectangular table`;
+    : `${length}×${width} inch rectangular table`;
 
-  // Final DALL·E prompt
   return `
-A photorealistic image of a handcrafted ${sizeText} river table made from two live-edge ${wood} wood slabs with visible knots, swirling grain patterns, and natural edge imperfections. Between the slabs flows a central resin river in an organic, fluid shape with ${resinColors}, blending together naturally to mimic hand-poured epoxy work. The resin appears rich and semi-translucent, catching light with subtle depth. The table rests on a modern flat ${base.toLowerCase()} base — not a pedestal — and features a smooth, ${finish.toLowerCase()} finish. The scene is lit with soft, diffused natural light in a clean, neutral setting, and viewed from a slightly elevated front angle to showcase the wood texture and resin flow. No text or logos — just the table, centered in frame with realistic material details.
+A photorealistic image of a handcrafted ${sizeText} river table made from two live‑edge ${wood} wood slabs with visible knots, swirling grain patterns, and natural edge imperfections. Between the slabs flows a central resin river in an organic, fluid shape with ${resinColors}, blending together naturally to mimic hand‑poured epoxy work. The resin appears rich and semi‑translucent, catching light with subtle depth. The table rests on a modern flat ${base.toLowerCase()} base — not a pedestal — and features a smooth, ${finish.toLowerCase()} finish. The scene is lit with soft, diffused natural light in a clean, neutral setting, and viewed from a slightly elevated front angle to showcase the wood texture and resin flow. No text or logos — just the table, centered in frame with realistic material details.
 `.trim();
 }
 
