@@ -1,4 +1,4 @@
-// server.js — Express backend to handle image generation via OpenAI
+// server.js — Express backend to handle image generation via GPT‑Image‑1
 
 const express = require('express');
 const bodyParser = require('body-parser');
@@ -17,25 +17,24 @@ const openai = new OpenAI({
 app.post('/generate', async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
-    console.log('Generated Prompt:\n', prompt);
+    console.log('🔍 Generated Prompt:', prompt);
 
-    // Use DALL·E image generation endpoint
     const response = await openai.images.generate({
-      prompt,
-      model: 'dall-e-3', // or dall-e-2 if using that version
+      model: 'gpt-image-1',
+      prompt: prompt,
       n: 1,
-      size: '1024x1024'
+      size: '1024x1024',
+      response_format: 'url'
     });
 
-    const imageUrl = response.data[0]?.url;
-
+    const imageUrl = response.data?.[0]?.url;
     if (!imageUrl) {
-      throw new Error('No image URL returned by OpenAI.');
+      throw new Error('No image URL returned');
     }
 
     res.json({ imageUrl, prompt });
   } catch (err) {
-    console.error('Image generation error:', err);
+    console.error('❌ Image generation error:', err);
     res.status(500).json({ error: 'Image generation failed.', details: err.message });
   }
 });
