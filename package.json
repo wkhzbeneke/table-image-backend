@@ -1,23 +1,16 @@
 {
+{
   "name": "table-image-backend",
   "version": "1.0.0",
-  "description": "Backend for Bill Beneke custom table builder using Stability AI image generation.",
+  "description": "Backend to generate DALL·E river table images",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "build": "echo 'Nothing to build'"
+    "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "openai": "^4.0.0",
-    "cors": "^2.8.5",
     "body-parser": "^1.20.2",
-    "dotenv": "^16.3.1",
-    "node-fetch": "^2.6.9"
-  },
-  "engines": {
-    "node": ">=18.x"
-  },
-  "author": "Bill Beneke",
-  "license": "MIT"
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.12"
+  }
 }
