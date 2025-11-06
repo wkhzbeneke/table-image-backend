@@ -44,4 +44,4 @@ A photorealistic image of a handcrafted ${sizeText} river table made from two li
 `.trim();
 }
 
-module.exports = { generateImagePrompt };
+export { generateImagePrompt };
