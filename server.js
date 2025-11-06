@@ -29,15 +29,15 @@ app.post("/generate", async (req, res) => {
     const base64Image = imageResponse.data?.[0]?.b64_json;
     if (!base64Image) throw new Error("No image returned from GPT-4o");
 
-    // ✅ Fixed line (properly closed template literal)
+    // ✅ Correct template literal — previously missing closing characters
     const imageUrl = `data:image/png;base64,${base64Image}`;
 
-    // Return JSON response
     res.json({ prompt, imageUrl });
-
   } catch (err) {
     console.error("Error generating image:", err);
-    res.status(500).json({ error: "Image generation failed", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Image generation failed", details: err.message });
   }
 });
 
