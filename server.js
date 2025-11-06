@@ -1,50 +1,40 @@
-// server.js – Receives form data, builds DALL·E prompt, sends request, returns image
-
+// server.js
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const { generateImagePrompt } = require('./builder');
-const fetch = require('node-fetch');
+const { OpenAI } = require('openai');
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 app.post('/generate', async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        prompt,
-        n: 1,
-        size: '1024x1024',
-        response_format: 'url',
-      }),
+    const response = await openai.images.generate({
+      model: 'dall-e-3',
+      prompt,
+      size: '1024x1024',
+      quality: 'standard',
+      n: 1,
     });
 
-    if (!response.ok) {
-      const error = await response.text();
-      console.error('DALL·E error:', error);
-      return res.status(500).json({ error: 'Image generation failed.' });
-    }
+    const imageUrl = response.data[0].url;
+    res.json({ imageUrl });
 
-    const result = await response.json();
-    res.json({ imageUrl: result.data[0].url });
-  } catch (error) {
-    console.error('Server error:', error);
+  } catch (err) {
+    console.error('Image generation error:', err.message);
     res.status(500).json({ error: 'Image generation failed.' });
   }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✅ Server is running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
