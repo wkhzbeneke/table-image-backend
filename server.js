@@ -17,34 +17,21 @@ app.post("/generate", async (req, res) => {
     const prompt = generateImagePrompt(req.body);
     console.log("Prompt for image generation:\n", prompt);
 
-    // Use GPT-4o or GPT-4o-mini for improved visual accuracy
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // change to "gpt-4o" for maximum quality
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a photorealistic image generation assistant. Create ultra-realistic renderings of handcrafted furniture and materials exactly as described, with accurate color, scale, and lighting."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      modalities: ["text", "image"],
-      response_format: "b64_json" // receive base64 image data
+    // --- GPT-4o Image Generation (correct method) ---
+    const imageResponse = await openai.images.generate({
+      model: "gpt-4o-mini", // or "gpt-4o" for higher fidelity
+      prompt: prompt,
+      size: "1024x1024",
+      n: 1,
+      response_format: "b64_json"
     });
 
-    // Extract base64 image data
-    const base64Image =
-      response.choices?.[0]?.message?.content?.[0]?.image?.b64_json;
-
+    const base64Image = imageResponse.data?.[0]?.b64_json;
     if (!base64Image) throw new Error("No image returned from GPT-4o");
 
-    // Convert base64 to a data URL for browser display
+    // Convert base64 to data URL
     const imageUrl = `data:image/png;base64,${base64Image}`;
 
-    // Send prompt and generated image back to frontend
     res.json({ prompt, imageUrl });
   } catch (err) {
     console.error("Error generating image:", err);
@@ -56,5 +43,5 @@ app.post("/generate", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
 });
