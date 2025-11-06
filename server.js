@@ -1,4 +1,5 @@
-// server.js — Express backend to handle image generation
+// server.js — Express backend to handle image generation via GPT‑4o image model
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -8,38 +9,38 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Import OpenAI SDK
 const { OpenAI } = require('openai');
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// ---- Image generation endpoint ----
 app.post('/generate', async (req, res) => {
   try {
-    // Generate the descriptive prompt
     const prompt = generateImagePrompt(req.body);
-    console.log('🧠 Prompt sent to DALL·E:', prompt);
+    console.log('Generated Prompt:', prompt);
 
-    // Generate the image with DALL·E 3
-    const dalleResponse = await openai.images.generate({
-      model: 'dall-e-3',
-      prompt,
-      n: 1,
-      size: '1024x1024',
-      style: 'vivid',
-      response_format: 'url'
+    // Call GPT‑4o image generation model ("gpt-image-1" or whichever your account has)
+    const response = await openai.chat.completions.create({
+      model: 'gpt-image-1',
+      messages: [
+        { role: 'system', content: 'You are a highly skilled image generation assistant.' },
+        { role: 'user', content: prompt }
+      ]
     });
 
-    // Get the image URL from the API response
-    const imageUrl = dalleResponse.data[0]?.url;
-    if (!imageUrl) throw new Error('No image URL returned');
+    // Extract image URL from response
+    const imageUrl = response.choices?.[0]?.message?.content;
+    if (!imageUrl) {
+      throw new Error('No image URL returned');
+    }
 
-    console.log('✅ Image URL:', imageUrl);
     res.json({ imageUrl });
   } catch (err) {
-    console.error('❌ Image generation error:', err.message);
+    console.error('Image generation error:', err);
     res.status(500).json({ error: 'Image generation failed.' });
   }
 });
 
-// ---- Start the server ----
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
