@@ -1,5 +1,3 @@
-// server.js — Express backend to generate image and return prompt
-
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -10,7 +8,9 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
 
 app.post("/generate", async (req, res) => {
   try {
@@ -23,11 +23,14 @@ app.post("/generate", async (req, res) => {
     const imageResponse = await openai.images.generate({
       model: selectedModel,
       prompt,
-      size: "1024x1024",
+      size: "1024x1024"
     });
 
     const imageUrl = imageResponse.data?.[0]?.url;
-    if (!imageUrl) throw new Error("No image returned from API");
+    if (!imageUrl) {
+      console.error("❌ No image URL returned:", imageResponse);
+      throw new Error("No image returned from API");
+    }
 
     res.json({ prompt, imageUrl });
   } catch (err) {
@@ -36,5 +39,5 @@ app.post("/generate", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
