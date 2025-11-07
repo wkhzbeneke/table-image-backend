@@ -20,27 +20,26 @@ app.post("/generate", async (req, res) => {
     console.log(`🖼 Using image model: ${selectedModel}`);
     console.log("Prompt:\n", prompt);
 
+    // 👇 request image from OpenAI
     const imageResponse = await openai.images.generate({
       model: selectedModel,
       prompt,
       size: "1024x1024",
-      quality: "high",
-      response_format: "url" // this works for DALL·E but we’ll handle b64 too
+      quality: "high"
     });
 
-    // ✅ Handle both DALL·E (URL) and GPT-Image (base64) responses
+    // ✅ handle both URL and Base64 responses
     let imageUrl;
+    const imgData = imageResponse.data?.[0];
 
-    if (imageResponse.data?.[0]?.url) {
-      // DALL·E or GPT image with URL
-      imageUrl = imageResponse.data[0].url;
-    } else if (imageResponse.data?.[0]?.b64_json) {
-      // GPT-Image-1 returns base64-encoded image data
-      imageUrl = `data:image/png;base64,${imageResponse.data[0].b64_json}`;
+    if (imgData?.url) {
+      imageUrl = imgData.url; // typical for DALL·E 3
+    } else if (imgData?.b64_json) {
+      imageUrl = `data:image/png;base64,${imgData.b64_json}`; // GPT-Image-1
     }
 
     if (!imageUrl) {
-      console.error("❌ No image returned from API:", imageResponse);
+      console.error("❌ No image returned:", imageResponse);
       throw new Error("No image returned from API");
     }
 
@@ -48,7 +47,10 @@ app.post("/generate", async (req, res) => {
 
   } catch (err) {
     console.error("❌ Image generation failed:", err);
-    res.status(500).json({ error: "Image generation failed", details: err.message });
+    res.status(500).json({
+      error: "Image generation failed",
+      details: err.message
+    });
   }
 });
 
