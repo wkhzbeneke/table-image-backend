@@ -1,7 +1,7 @@
 {
   "name": "table-image-backend",
   "version": "1.0.0",
-  "description": "Backend service for generating river table images via OpenAI",
+  "description": "Backend service for generating river table images via OpenAI and generating PDF order summaries",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -12,6 +12,8 @@
     "express": "^4.18.2",
     "body-parser": "^1.20.2",
     "openai": "^5.0.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^3.3.2",
+    "pdfkit": "^0.15.0",
+    "fs-extra": "^11.2.0"
   }
 }
