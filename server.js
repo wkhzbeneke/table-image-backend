@@ -23,16 +23,29 @@ app.post("/generate", async (req, res) => {
     const imageResponse = await openai.images.generate({
       model: selectedModel,
       prompt,
-      size: "1024x1024"
+      size: "1024x1024",
+      quality: "high",
+      response_format: "url" // this works for DALL·E but we’ll handle b64 too
     });
 
-    const imageUrl = imageResponse.data?.[0]?.url;
+    // ✅ Handle both DALL·E (URL) and GPT-Image (base64) responses
+    let imageUrl;
+
+    if (imageResponse.data?.[0]?.url) {
+      // DALL·E or GPT image with URL
+      imageUrl = imageResponse.data[0].url;
+    } else if (imageResponse.data?.[0]?.b64_json) {
+      // GPT-Image-1 returns base64-encoded image data
+      imageUrl = `data:image/png;base64,${imageResponse.data[0].b64_json}`;
+    }
+
     if (!imageUrl) {
-      console.error("❌ No image URL returned:", imageResponse);
+      console.error("❌ No image returned from API:", imageResponse);
       throw new Error("No image returned from API");
     }
 
     res.json({ prompt, imageUrl });
+
   } catch (err) {
     console.error("❌ Image generation failed:", err);
     res.status(500).json({ error: "Image generation failed", details: err.message });
