@@ -3,28 +3,32 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import { generateImagePrompt } from "./builder.js";
 import OpenAI from "openai";
-import fs from "fs-extra";
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
 import PDFDocument from "pdfkit";
+import fs from "fs";
+import path from "path";
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+const openDb = async () => {
+  return open({
+    filename: "./orders.db",
+    driver: sqlite3.Database
+  });
+};
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// Ensure "orders" folder exists
-const ordersDir = "./orders";
-fs.ensureDirSync(ordersDir);
-
-/* -------------------------------
-   IMAGE GENERATION ENDPOINT
--------------------------------- */
+// 🖼 EXISTING IMAGE GENERATOR
 app.post("/generate", async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
-    const selectedModel = req.body.model || process.env.IMAGE_MODEL || "dall-e-3";
+    const selectedModel = req.body.model || "dall-e-3";
 
     console.log(`🖼 Using image model: ${selectedModel}`);
     console.log("Prompt:\n", prompt);
@@ -32,15 +36,10 @@ app.post("/generate", async (req, res) => {
     const imageResponse = await openai.images.generate({
       model: selectedModel,
       prompt,
-      size: "1024x1024",
-      quality: "high"
+      size: "1024x1024"
     });
 
-    let imageUrl;
-    const imgData = imageResponse.data?.[0];
-    if (imgData?.url) imageUrl = imgData.url;
-    else if (imgData?.b64_json) imageUrl = `data:image/png;base64,${imgData.b64_json}`;
-
+    const imageUrl = imageResponse.data?.[0]?.url;
     if (!imageUrl) throw new Error("No image returned from API");
 
     res.json({ prompt, imageUrl });
@@ -50,72 +49,115 @@ app.post("/generate", async (req, res) => {
   }
 });
 
-/* -------------------------------
-   PDF ORDER SAVE ENDPOINT
--------------------------------- */
+// 💾 SAVE ORDER TO DATABASE
 app.post("/saveOrder", async (req, res) => {
+  const { customer, table, imageUrl, prompt } = req.body;
   try {
-    const { customer, table, imageUrl, prompt } = req.body;
-    const orderId = `ORD-${Date.now()}`;
-    const filePath = `${ordersDir}/${orderId}.pdf`;
+    const db = await openDb();
+    await db.run(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        order_id TEXT,
+        name TEXT,
+        address TEXT,
+        phone TEXT,
+        email TEXT,
+        wood TEXT,
+        shape TEXT,
+        edge TEXT,
+        river TEXT,
+        length TEXT,
+        width TEXT,
+        diameter TEXT,
+        resin1 TEXT,
+        resin2 TEXT,
+        resin3 TEXT,
+        base TEXT,
+        finish TEXT,
+        prompt TEXT,
+        image_url TEXT,
+        date_created TEXT
+      )
+    `);
 
-    const doc = new PDFDocument({ margin: 50 });
-    const stream = fs.createWriteStream(filePath);
-    doc.pipe(stream);
+    const orderId = "ORD-" + Date.now();
+    const date = new Date().toISOString();
 
-    // Title
-    doc.fontSize(20).fillColor("#0A1B2F").text("Bowls, Boards, & Beyond", { align: "center" });
-    doc.moveDown(1);
+    await db.run(`
+      INSERT INTO orders (
+        order_id, name, address, phone, email, wood, shape, edge, river,
+        length, width, diameter, resin1, resin2, resin3, base, finish, prompt, image_url, date_created
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      orderId, customer.name, customer.address, customer.phone, customer.email,
+      table.wood, table.shape, table.edge, table.river, table.length,
+      table.width, table.diameter, table.resin1, table.resin2, table.resin3,
+      table.base, table.finish, prompt, imageUrl, date
+    ]);
 
-    // Order info
-    doc.fontSize(14).fillColor("#000").text(`Order #: ${orderId}`);
-    doc.text(`Customer: ${customer.name}`);
-    doc.text(`Address: ${customer.address}`);
-    doc.text(`Phone: ${customer.phone}`);
-    doc.text(`Email: ${customer.email}`);
-    doc.moveDown();
-
-    // Table details
-    doc.fontSize(14).fillColor("#0A1B2F").text("Table Design Details:", { underline: true });
-    Object.entries(table).forEach(([key, value]) => {
-      doc.fontSize(12).fillColor("#000").text(`${key}: ${value}`);
-    });
-
-    doc.moveDown();
-
-    // AI Prompt
-    doc.fontSize(14).fillColor("#0A1B2F").text("Prompt Used:", { underline: true });
-    doc.fontSize(11).fillColor("#444").text(prompt || "N/A", { align: "left" });
-
-    // Add Image
-    if (imageUrl && imageUrl.startsWith("data:image/")) {
-      const base64 = imageUrl.split(",")[1];
-      const imgBuffer = Buffer.from(base64, "base64");
-      const tempPath = `${ordersDir}/temp_${orderId}.png`;
-      fs.writeFileSync(tempPath, imgBuffer);
-      doc.addPage();
-      doc.image(tempPath, { fit: [450, 450], align: "center", valign: "center" });
-      fs.removeSync(tempPath);
-    } else if (imageUrl) {
-      doc.addPage();
-      doc.fontSize(12).text("Image preview:", { align: "center" });
-      doc.moveDown(1);
-      doc.fillColor("blue").text(imageUrl, { link: imageUrl, underline: true, align: "center" });
-    }
-
-    doc.end();
-
-    stream.on("finish", () => {
-      console.log(`✅ Order PDF created: ${filePath}`);
-      res.json({ success: true, orderId, pdfUrl: `${orderId}.pdf` });
-    });
+    res.json({ success: true, orderId });
   } catch (err) {
-    console.error("❌ PDF creation failed:", err);
+    console.error("❌ Database save failed:", err);
     res.status(500).json({ error: "Failed to save order", details: err.message });
   }
 });
 
-app.use("/orders", express.static(ordersDir));
+// 🧾 GENERATE ORDER PDF
+app.post("/generate-pdf", async (req, res) => {
+  try {
+    const { orderId, customer, table, imageUrl, prompt } = req.body;
+
+    const pdfDir = path.join(process.cwd(), "pdfs");
+    if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);
+
+    const pdfPath = path.join(pdfDir, `${orderId}.pdf`);
+    const doc = new PDFDocument();
+    const writeStream = fs.createWriteStream(pdfPath);
+    doc.pipe(writeStream);
+
+    doc.fontSize(20).text("Bowls, Boards, & Beyond", { align: "center" });
+    doc.moveDown();
+    doc.fontSize(14).text(`Order #: ${orderId}`);
+    doc.text(`Name: ${customer.name}`);
+    doc.text(`Address: ${customer.address}`);
+    doc.text(`Phone: ${customer.phone}`);
+    doc.text(`Email: ${customer.email}`);
+    doc.moveDown();
+    doc.text(`Wood: ${table.wood}`);
+    doc.text(`Shape: ${table.shape}`);
+    doc.text(`Edge: ${table.edge}`);
+    doc.text(`River: ${table.river}`);
+    doc.text(`Length: ${table.length}`);
+    doc.text(`Width: ${table.width}`);
+    doc.text(`Diameter: ${table.diameter}`);
+    doc.text(`Resins: ${table.resin1}, ${table.resin2}, ${table.resin3}`);
+    doc.text(`Base: ${table.base}`);
+    doc.text(`Finish: ${table.finish}`);
+    doc.moveDown();
+    doc.text("Prompt Used:");
+    doc.fontSize(10).text(prompt, { width: 500 });
+
+    if (imageUrl) {
+      const img = await fetch(imageUrl);
+      const buffer = Buffer.from(await img.arrayBuffer());
+      const tmp = path.join(pdfDir, `tmp-${orderId}.png`);
+      fs.writeFileSync(tmp, buffer);
+      doc.addPage();
+      doc.image(tmp, { fit: [450, 450], align: "center" });
+      fs.unlinkSync(tmp);
+    }
+
+    doc.end();
+    writeStream.on("finish", () => {
+      res.json({ success: true, pdfUrl: `/pdfs/${orderId}.pdf` });
+    });
+  } catch (err) {
+    console.error("❌ PDF generation failed:", err);
+    res.status(500).json({ error: "PDF creation failed", details: err.message });
+  }
+});
+
+app.use("/pdfs", express.static("pdfs"));
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
