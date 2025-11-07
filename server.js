@@ -57,7 +57,7 @@ const openai = new OpenAI({
 });
 
 
-// 🧠 Generate table image (fixed)
+// 🧠 Generate table image (now supports base64)
 app.post("/generate", async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
@@ -66,7 +66,6 @@ app.post("/generate", async (req, res) => {
     console.log(`🖼 Using model: ${selectedModel}`);
     console.log("Prompt:\n", prompt);
 
-    // ✅ Auto-adjust model naming for new SDK compatibility
     const modelToUse =
       selectedModel === "gpt-image-1" ? "gpt-image-1" : "dall-e-3";
 
@@ -76,26 +75,44 @@ app.post("/generate", async (req, res) => {
       size: "1024x1024"
     });
 
-    // ✅ Safely extract URL regardless of API version
-    const imageUrl =
+    // Try to extract URL; fall back to base64
+    let imageUrl =
       imageResponse.data?.[0]?.url ||
       imageResponse.data?.url ||
       imageResponse.url ||
       null;
 
+    // ✅ Handle base64 fallback from API
+    if (!imageUrl && imageResponse.data?.[0]?.b64_json) {
+      const base64Data = imageResponse.data[0].b64_json;
+      const buffer = Buffer.from(base64Data, "base64");
+
+      // Ensure the local folder exists
+      if (!fs.existsSync("./generated")) fs.mkdirSync("./generated");
+
+      const filename = `table-${Date.now()}.png`;
+      const filepath = `./generated/${filename}`;
+      fs.writeFileSync(filepath, buffer);
+
+      // Create a public URL to access it
+      imageUrl = `${req.protocol}://${req.get("host")}/generated/${filename}`;
+    }
+
     if (!imageUrl) {
-      console.error("❌ No image URL returned:", imageResponse);
+      console.error("❌ No image URL or base64 data returned:", imageResponse);
       return res.status(500).json({ error: "No image returned from API" });
     }
 
     console.log("✅ Image generated successfully:", imageUrl);
     res.json({ prompt, imageUrl });
-
   } catch (err) {
     console.error("❌ Image generation failed:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
+// Serve generated images
+app.use("/generated", express.static("./generated"));
 
 
 // 💾 Save order
