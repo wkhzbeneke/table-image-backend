@@ -12,6 +12,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// 🗄️ Database setup
 const openDb = async () => {
   return open({
     filename: "./orders.db",
@@ -55,7 +56,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-// 🧠 Generate table image
+
+// 🧠 Generate table image (fixed)
 app.post("/generate", async (req, res) => {
   try {
     const prompt = generateImagePrompt(req.body);
@@ -64,21 +66,37 @@ app.post("/generate", async (req, res) => {
     console.log(`🖼 Using model: ${selectedModel}`);
     console.log("Prompt:\n", prompt);
 
+    // ✅ Auto-adjust model naming for new SDK compatibility
+    const modelToUse =
+      selectedModel === "gpt-image-1" ? "gpt-image-1" : "dall-e-3";
+
     const imageResponse = await openai.images.generate({
-      model: selectedModel,
+      model: modelToUse,
       prompt,
       size: "1024x1024"
     });
 
-    const imageUrl = imageResponse.data?.[0]?.url;
-    if (!imageUrl) throw new Error("No image returned from API");
+    // ✅ Safely extract URL regardless of API version
+    const imageUrl =
+      imageResponse.data?.[0]?.url ||
+      imageResponse.data?.url ||
+      imageResponse.url ||
+      null;
 
+    if (!imageUrl) {
+      console.error("❌ No image URL returned:", imageResponse);
+      return res.status(500).json({ error: "No image returned from API" });
+    }
+
+    console.log("✅ Image generated successfully:", imageUrl);
     res.json({ prompt, imageUrl });
+
   } catch (err) {
     console.error("❌ Image generation failed:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // 💾 Save order
 app.post("/saveOrder", async (req, res) => {
@@ -121,6 +139,7 @@ app.post("/saveOrder", async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
+
 
 // 📄 Generate PDF
 app.post("/generate-pdf", async (req, res) => {
@@ -181,7 +200,8 @@ app.post("/generate-pdf", async (req, res) => {
   }
 });
 
-// 📋 View all orders (interactive)
+
+// 📋 View all orders
 app.get("/orders", async (req, res) => {
   try {
     const db = await openDb();
